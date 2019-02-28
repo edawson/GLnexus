@@ -24,6 +24,3 @@ RUN git fetch --tags origin && git checkout "$git_revision" && git submodule upd
 # compile GLnexus
 RUN cmake -DCMAKE_BUILD_TYPE=$build_type . && make -j4
 
-# set up default container start to run tests
-CMD ctest -V
-

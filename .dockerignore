@@ -1,0 +1,6 @@
+*.md
+capnp/
+include/
+src/
+test/
+CMakeLists.txt
