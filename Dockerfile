@@ -22,5 +22,4 @@ WORKDIR /GLnexus
 RUN git fetch --tags origin && git checkout "$git_revision" && git submodule update --init --recursive
 
 # compile GLnexus
-RUN cmake -DCMAKE_BUILD_TYPE=$build_type . && make -j4
-
+RUN cmake -DCMAKE_BUILD_TYPE=$build_type . && make -j4 && cp glnexus_cli /usr/bin/
