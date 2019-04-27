@@ -4,6 +4,7 @@ task genotypeTask{
     File bedFile
     Int threads
     Int memory
+    Int diskGB
     String outbase
 
     Int memGB = memory + 11
@@ -15,6 +16,7 @@ task genotypeTask{
     runtime{
         docker : "erictdawson/glnexus"
         memory : "${memGB}" + " GB"
+        disks : "local-disk " + diskGB + " HDD"
         cpu : "${threads}"
         preemptible_tries : 1
     }
@@ -24,6 +26,8 @@ task genotypeTask{
     }
 }
 
+
+
 workflow GLNexusWorkflow{
     Array[File] inputVCFs
     Array[File] inputTBIs
@@ -31,13 +35,16 @@ workflow GLNexusWorkflow{
     Int threads
     Int memory
 
+    Int diskGB = ceil(size(inputVCFs, "GB") + size(inputTBIs, "GB")) + 20
+
     call genotypeTask{
         input:
             inputVCFs=inputVCFs,
             inputTBIs=inputTBIs,
             bedFile=bedFile,
             threads=threads,
-            memory=memory
+            memory=memory,
+            diskGB=diskGB
         }
 
 }
