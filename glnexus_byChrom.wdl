@@ -10,13 +10,17 @@ task genotypeTask{
     Int memGB = memory + 11
 
     command {
-        glnexus_cli --config gatk --bed ${bedFile} --threads ${threads} --mem-gbytes ${memory} --list ${write_lines(inputVCFs)} > ${outbase}.glnexus.g.bcf
+        export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so && \
+        glnexus_cli --config gatk \
+        --bed ${bedFile} --threads ${threads} \
+        --mem-gbytes ${memory} \
+        --list ${write_lines(inputVCFs)} > ${outbase}.glnexus.g.bcf
     }
 
     runtime{
         docker : "erictdawson/glnexus"
         memory : "${memGB}" + " GB"
-        disks : "local-disk " + diskGB + " HDD"
+        disks : "local-disk " + diskGB + " SSD"
         cpu : "${threads}"
         preemptible_tries : 3
     }
@@ -31,20 +35,24 @@ task getArrayChromosomeVCFTask{
     Array[File] inputTBIs
     String chrom
 
+    Int? threads = 4
+
     Int diskGB
 
-    command<<<
-      for i in ${sep=' ' inputVCFs}; do
+    command{
+      for i in ${sep=' ' inputVCFs}
+      do
         outbase=$( basename $(basename $i ".gz") ".vcf")
-        echo "bcftools $i ${chrom} > $outbase.${chrom}.vcf && bgzip -c $outbase.${chrom}.vcf > $outbase.${chrom}.vcf.gz" >> jfile.txt && \
-        python /usr/bin/launcher.py -i jfile.txt -c 1 -n 4
-    >>>
+        echo "bcftools view $i ${chrom} > $outbase.${chrom}.vcf && bgzip -c $outbase.${chrom}.vcf > $outbase.${chrom}.vcf.gz" >> jfile.txt && \
+        python /usr/bin/launcher.py -i jfile.txt -c 1 -n ${threads}
+      done
+    }
 
     runtime{
         docker : "erictdawson/base"
-        cpu : 4
+        cpu : "${threads}"
         memory : "3 GB"
-        disks : "local-disk " + diskGB + " HDD"
+        disks : "local-disk " + diskGB + " SSD"
         preemptible : 3
     }
 
@@ -59,6 +67,7 @@ workflow GLNexusWorkflow{
     Array[File] inputTBIs
     File bedFile
     File chromFile
+    String outbase
     Int threads
     Int memory
 
@@ -74,7 +83,8 @@ workflow GLNexusWorkflow{
                 inputVCFs=inputVCFs,
                 inputTBIs=inputTBIs,
                 chrom=chrom,
-                diskGB=diskGB
+                diskGB=diskGB,
+                threads=threads
         }
 
         Int chromDiskGB = 500
@@ -86,7 +96,8 @@ workflow GLNexusWorkflow{
                 bedFile=bedFile,
                 threads=threads,
                 memory=memory,
-                diskGB=chromDiskGB
+                diskGB=chromDiskGB,
+                outbase=outbase
         }
     }
 
