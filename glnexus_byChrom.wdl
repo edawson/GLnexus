@@ -6,6 +6,7 @@ task genotypeTask{
     Int memory
     Int diskGB
     String outbase
+    String chrom
 
     Int memGB = memory + 11
 
@@ -14,7 +15,7 @@ task genotypeTask{
         glnexus_cli --config gatk \
         --bed ${bedFile} --threads ${threads} \
         --mem-gbytes ${memory} \
-        --list ${write_lines(inputVCFs)} > ${outbase}.glnexus.g.bcf
+        --list ${write_lines(inputVCFs)} > ${outbase}.glnexus.${chrom}.g.bcf
     }
 
     runtime{
@@ -26,7 +27,7 @@ task genotypeTask{
     }
 
     output{
-        File glnexusBCF = "${outbase}.glnexus.g.bcf"
+        File glnexusBCF = "${outbase}.glnexus.${chrom}.g.bcf"
     }
 }
 
@@ -39,14 +40,17 @@ task getArrayChromosomeVCFTask{
 
     Int diskGB
 
-    command{
-      for i in ${sep=' ' inputVCFs}
+    command<<<
+      while read i
       do
+        ln -s $i ./$(basename $i)
+        ln -s $i.tbi ./$(basename $i).tbi
+        shortname=$(basename $i)
         outbase=$( basename $(basename $i ".gz") ".vcf")
-        echo "bcftools view $i ${chrom} > $outbase.${chrom}.vcf && bgzip -c $outbase.${chrom}.vcf > $outbase.${chrom}.vcf.gz" >> jfile.txt && \
-        python /usr/bin/launcher.py -i jfile.txt -c 1 -n ${threads}
-      done
-    }
+        echo "tabix -h $shortname ${chrom} > $outbase.${chrom}.vcf && bgzip -c $outbase.${chrom}.vcf > $outbase.${chrom}.vcf.gz && tabix $outbase.${chrom}.vcf.gz" >> ./jfile.txt
+      done < ${write_lines(inputVCFs)} &&
+      python /usr/bin/launcher.py -i ./jfile.txt -c 1 -n ${threads}
+    >>>
 
     runtime{
         docker : "erictdawson/base"
@@ -97,7 +101,8 @@ workflow GLNexusWorkflow{
                 threads=threads,
                 memory=memory,
                 diskGB=chromDiskGB,
-                outbase=outbase
+                outbase=outbase,
+                chrom=chrom
         }
     }
 
