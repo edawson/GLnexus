@@ -39,15 +39,17 @@ task getArrayChromosomeVCFTask{
     Int? threads = 4
 
     Int diskGB
+    
+    String dollar = "$"
 
     command<<<
       while read i
       do
-        ln -s $i ./$(basename $i)
-        ln -s $i.tbi ./$(basename $i).tbi
-        shortname=$(basename $i)
-        outbase=$( basename $(basename $i ".gz") ".vcf")
-        echo "tabix -h $shortname ${chrom} > $outbase.${chrom}.vcf && bgzip -c $outbase.${chrom}.vcf > $outbase.${chrom}.vcf.gz && tabix $outbase.${chrom}.vcf.gz" >> ./jfile.txt
+        ln -s $i ./$(basename ${dollar}i)
+        ln -s $i.tbi ./$(basename ${dollar}i).tbi
+        shortname=$(basename ${dollar}i)
+        outbase=$( basename $(basename ${dollar}i ".gz") ".vcf")
+        echo "tabix -h ${dollar}shortname ${chrom} > ${dollar}outbase.${chrom}.vcf && bgzip -c ${dollar}outbase.${chrom}.vcf > ${dollar}outbase.${chrom}.vcf.gz && tabix ${dollar}outbase.${chrom}.vcf.gz" >> ./jfile.txt
       done < ${write_lines(inputVCFs)} &&
       python /usr/bin/launcher.py -i ./jfile.txt -c 1 -n ${threads}
     >>>
