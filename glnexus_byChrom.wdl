@@ -47,7 +47,7 @@ task getArrayChromosomeVCFTask{
         ln -s $i.tbi ./$(basename $i).tbi && \
         shortname=$(basename $i) && \
         outbase=$( basename $(basename $i ".gz") ".vcf") && \
-        echo "tabix -h $shortname ${chrom} > $outbase.${chrom}.vcf && bgzip -c $outbase.${chrom}.vcf > $outbase.${chrom}.vcf.gz && tabix $outbase.${chrom}.vcf.gz" >> ./jfile.txt
+        echo "tabix -f $shortname && tabix -h $shortname ${chrom} > $outbase.${chrom}.vcf && bgzip -c $outbase.${chrom}.vcf > $outbase.${chrom}.vcf.gz && tabix $outbase.${chrom}.vcf.gz" >> ./jfile.txt
       done < ${write_lines(inputVCFs)} &&
       python /usr/bin/launcher.py -i ./jfile.txt -c 1 -n ${threads}
     >>>
